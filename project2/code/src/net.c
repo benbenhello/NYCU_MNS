@@ -15,7 +15,7 @@
 uint16_t cal_ipv4_cksm(struct iphdr iphdr)
 {
     // [TODO]: Finish IP checksum calculation
-    unsigned short *addr = &iphdr;
+    unsigned short *addr = (unsigned short *)&iphdr;
     unsigned int count = iphdr.ihl<<2;
     register unsigned long sum = 0;
     while ( count > 1)
