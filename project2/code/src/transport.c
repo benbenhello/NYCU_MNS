@@ -13,6 +13,36 @@
 uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
 {
     // [TODO]: Finish TCP checksum calculation
+    register unsigned long sum = 0;
+    unsigned short tcpLen = ntohs(iphdr.tot_len) - (iphdr.ihl<<2);
+    unsigned short *ipPayload = (unsigned short *)&tcphdr;
+    // add pseudo header
+    //src ip
+    sum += (iphdr.saddr >> 16)&0xFFFF;
+    sum += (iphdr.saddr)&0xFFFF;
+    //dst ip
+    sum += (iphdr.daddr >> 16)&0xFFFF;
+    sum += (iphdr.daddr)&0xFFFF;
+    //protocol and reserved: 6
+    sum += htons(IPPROTO_TCP);
+    // length
+    sum += htons(tcpLen);
+    // add th IP payload
+    while ( tcpLen > 1)
+    {
+        sum += *ipPayload++;
+        tcpLen -= 2;
+    }
+    if ( tcpLen > 0)
+    {
+        sum += ((*ipPayload)&htons(0xFF00));
+    }
+    while ( sum >> 16)
+    {
+        sum += ( sum & 0xFFFF) + ( sum << 16);
+    }
+    sum = ~sum;
+    return ((u_int16_t)sum);
 }
 
 uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
