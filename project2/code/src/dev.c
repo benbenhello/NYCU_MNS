@@ -36,9 +36,21 @@ inline static int get_ifr_mtu(struct ifreq *ifr)
 inline static struct sockaddr_ll init_addr(char *name)
 {
     struct sockaddr_ll addr;
+    struct ifreq ifstruct;
     bzero(&addr, sizeof(addr));
 
     // [TODO]: Fill up struct sockaddr_ll addr which will be used to bind in func set_sock_fd
+    int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+
+    addr.sll_family = AF_PACKET;
+
+    strcpy(ifstruct.ifr_name, name);
+    ioctl(sockfd, SIOGIFINDEX, &ifstruct);
+
+    addr.sll_ifindex = ifstruct.ifr_ifindex;
+    addr.sll_protocol = htons(ETH_P_ALL);
+    
+    close(sockfd);
 
     if (addr.sll_ifindex == 0) {
         perror("if_nameindex()");
