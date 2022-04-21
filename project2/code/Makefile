@@ -17,7 +17,7 @@ DEPS = \
 	src/replay.c          \
 	src/sha1.c
 
-all: $(ONPC)
+all: $(ONUE)
 
 debug: $(ONPC)
 
