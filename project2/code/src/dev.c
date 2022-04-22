@@ -45,7 +45,10 @@ inline static struct sockaddr_ll init_addr(char *name)
     addr.sll_family = AF_PACKET;
 
     strcpy(ifstruct.ifr_name, name);
-    ioctl(sockfd, SIOGIFINDEX, &ifstruct);
+
+    if(ioctl(sockfd, SIOGIFINDEX, &ifstruct) < 0){
+        perror("ioctl()");
+    }
 
     addr.sll_ifindex = ifstruct.ifr_ifindex;
     addr.sll_protocol = htons(ETH_P_ALL);
@@ -78,6 +81,41 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
 {
     // [TODO]: store the whole frame into self->frame
     // and store the length of the frame into self->framelen
+
+    uint8_t* sendbuff = (uint8_t *)malloc(sizeof(self->linkhdr)); // increase in case of more data
+    uint16_t total_len = 0;
+    total_len += sizeof(self->linkhdr);
+
+    struct iphdr *iph = (struct iphdr*)(sendbuff + sizeof(self->linkhdr));
+    *iph = net.ip4hdr;
+    total_len += sizeof(struct iphdr);
+
+    struct esp_header *esph = (struct esp_header*)(sendbuff + sizeof(self->linkhdr) + sizeof(struct iphdr));
+    *esph = esp.hdr;
+    total_len += sizeof(struct esp_header);
+
+    struct tcphdr *tcph = (struct tcphdr*)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header));
+    *tcph = txp.thdr;
+    total_len += txp.hdrlen;
+
+    uint8_t *tcppl = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen);
+    *tcppl = *txp.pl;
+    total_len += txp.plen;
+
+    struct esp_trailer *espt = (struct esp_trailer *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen + txp.plen);
+    *espt = esp.tlr;
+    total_len += sizeof(struct esp_trailer);
+
+    uint8_t *espa = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen + txp.plen + sizeof(struct esp_trailer));
+    *espa = *esp.auth;
+    total_len += esp.authlen;
+
+    tcph->check = cal_tcp_cksm(net.ip4hdr, txp.thdr, txp.pl, txp.plen);
+    iph->tot_len = htons(total_len - sizeof(self->linkhdr));
+    iph->check = cal_ipv4_cksm(*iph);
+
+    self->frame = sendbuff;
+    self->framelen = total_len;
 }
 
 ssize_t tx_frame(Dev *self)
