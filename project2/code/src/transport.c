@@ -10,6 +10,8 @@
 #include "net.h"
 #include "transport.h"
 
+#define DEBUG
+
 uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
 {
     // [TODO]: Finish TCP checksum calculation
@@ -50,6 +52,45 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // [TODO]: Collect information from segm
     // (Check IP addr & port to determine the next seq and ack value)
     // Return payload of TCP
+
+    // struct txp {
+    //     uint16_t x_src_port; /* Expected src port to CSCF */
+    //     uint16_t x_dst_port; /* Expected dst port to CSCF */
+
+    //     uint32_t x_tx_seq; /* Expected tx sequence number */
+    //     uint32_t x_tx_ack; /* Expected tx acknowledge number */
+
+    //     struct tcphdr thdr;
+    //     uint8_t hdrlen;
+
+    //     uint8_t *pl;
+    //     uint16_t plen;
+
+    //     uint8_t *(*dissect)(Net *net, Txp *self, uint8_t *txp_data, size_t txp_len);
+    //     Txp *(*fmt_rep)(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen);
+    // };
+    struct tcphdr *tcp = (struct tcphdr *)segm;
+
+#ifdef DEBUG
+   	printf("\nTCP Header\n");
+   	printf("\t|-Source Port          : %u\n",ntohs(tcp->source));
+   	printf("\t|-Destination Port     : %u\n",ntohs(tcp->dest));
+   	printf("\t|-Sequence Number      : %u\n",ntohl(tcp->seq));
+   	printf("\t|-Acknowledge Number   : %u\n",ntohl(tcp->ack_seq));
+   	printf("\t|-Header Length        : %d DWORDS or %d BYTES\n" ,(unsigned int)tcp->doff,(unsigned int)tcp->doff*4);
+	printf("\t|----------Flags-----------\n");
+	printf("\t\t|-Urgent Flag          : %d\n",(unsigned int)tcp->urg);
+	printf("\t\t|-Acknowledgement Flag : %d\n",(unsigned int)tcp->ack);
+	printf("\t\t|-Push Flag            : %d\n",(unsigned int)tcp->psh);
+	printf("\t\t|-Reset Flag           : %d\n",(unsigned int)tcp->rst);
+	printf("\t\t|-Synchronise Flag     : %d\n",(unsigned int)tcp->syn);
+	printf("\t\t|-Finish Flag          : %d\n",(unsigned int)tcp->fin);
+	printf("\t|-Window size          : %d\n",ntohs(tcp->window));
+	printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
+	printf("\t|-Urgent Pointer       : %d\n",tcp->urg_ptr);
+
+#endif
+
 }
 
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
