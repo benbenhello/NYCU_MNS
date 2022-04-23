@@ -94,6 +94,9 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     // dest.sin_addr.s_addr = iph->daddr;
     // self->dst_ip = inet_ntoa(dest.sin_addr);
 
+    self->src_ip = inet_ntoa(source.sin_addr);
+    self->dst_ip = inet_ntoa(dest.sin_addr);
+    
     switch (ip->protocol)
     {
     case ESP:

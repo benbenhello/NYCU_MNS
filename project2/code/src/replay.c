@@ -87,9 +87,9 @@ bool dissect_rx_data(Dev *dev,
     printf("net dissect success\n");
     if (net->pro == ESP) {
         uint8_t *esp_data = esp->dissect(esp, net_data, net->plen);
-        printf("net esp success\n");
+        printf("esp dissect success\n");
         uint8_t *txp_data = txp->dissect(net, txp, esp_data, esp->plen);
-        printf("net txp success\n");
+        printf("txp dissect success\n");
         if(txp->thdr.psh){
             if(*test_for_dissect){
                 char str[] = "I am client, and I am keeping sending message to server hahahaha";

@@ -7,6 +7,8 @@
 #include "transport.h"
 #include "hmac.h"
 
+#define DEBUG
+
 EspHeader esp_hdr_rec;
 
 void get_ik(int type, uint8_t *key)
@@ -58,6 +60,41 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 {
     // [TODO]: Collect information from esp_pkt.
     // Return payload of ESP
+
+    // struct esp {
+    //     EspHeader hdr;
+
+    //     uint8_t *pl;    // ESP payload
+    //     size_t plen;    // ESP payload length
+
+    //     uint8_t *pad;   // ESP padding
+
+    //     EspTrailer tlr;
+
+    //     uint8_t *auth;
+    //     size_t authlen;
+
+    //     uint8_t *esp_key;
+
+    //     uint8_t *(*set_padpl)(Esp *self);
+    //     uint8_t *(*set_auth)(Esp *self,
+    //                         ssize_t (*hmac)(uint8_t const *, size_t,
+    //                                         uint8_t const *, size_t,
+    //                                         uint8_t *));
+    //     void (*get_key)(Esp *self);
+    //     uint8_t *(*dissect)(Esp *self, uint8_t *esp_pkt, size_t esp_len);
+    //     Esp *(*fmt_rep)(Esp *self, Proto p);
+    // };
+    struct esp_header *esphdr = (struct esp_header *)esp_pkt;
+    
+    self->hdr = *esphdr;
+
+#ifdef DEBUG
+    printf("ESP seq: %d\n",esphdr->seq);
+    printf("ESP spi: %d\n",esphdr->spi);
+#endif
+    
+    return esp_pkt + sizeof(struct esp_header);
 }
 
 Esp *fmt_esp_rep(Esp *self, Proto p)
