@@ -40,7 +40,7 @@ inline static struct sockaddr_ll init_addr(char *name)
     bzero(&addr, sizeof(addr));
 
     // [TODO]: Fill up struct sockaddr_ll addr which will be used to bind in func set_sock_fd
-    int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
 
     addr.sll_family = AF_PACKET;
 
@@ -51,7 +51,7 @@ inline static struct sockaddr_ll init_addr(char *name)
     }
 
     addr.sll_ifindex = ifstruct.ifr_ifindex;
-    addr.sll_protocol = htons(ETH_P_ALL);
+    addr.sll_protocol = htons(ETH_P_IP);
     
     close(sockfd);
 
