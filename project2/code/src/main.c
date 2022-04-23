@@ -25,10 +25,13 @@ void ipsec_hijack(char *INTERFACE)
     Txp txp;
 
     init_dev(&dev, INTERFACE);
+    printf("dev init success\n");
     init_net(&net);
+    printf("net init success\n");
     init_esp(&esp);
+    printf("esp init success\n");
     init_txp(&txp);
-
+    printf("txp init success\n");
     char *str = (char*)malloc(sizeof(char)*1024);
 
     fd_set readfds;

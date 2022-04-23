@@ -14,11 +14,11 @@
 
 #define DEBUG
 
-uint16_t cal_ipv4_cksm(struct iphdr iphdr)
+uint16_t cal_ipv4_cksm(struct iphdr* iphdr)
 {
     // [TODO]: Finish IP checksum calculation
-    unsigned short *addr = (unsigned short *)&iphdr;
-    unsigned int count = iphdr.ihl<<2;
+    unsigned short *addr = (unsigned short *)iphdr;
+    unsigned int count = iphdr->ihl<<2;
     register unsigned long sum = 0;
     while ( count > 1)
     {
@@ -41,7 +41,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 {
     // [TODO]: Collect information from pkt.
     // Return payload of network layer
-
+    struct sockaddr_in source,dest;
     // struct net {
     //     char *src_ip;
     //     char *dst_ip;
@@ -58,14 +58,43 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     //     uint8_t *(*dissect)(Net *self, uint8_t *pkt, size_t pkt_len);
     //     Net *(*fmt_rep)(Net *self);
     // };
-    struct iphdr *iph = (struct iphdr *)pkt;
-    self->ip4hdr = *iph;
-    self->hdrlen = sizeof(struct iphdr);
+    struct iphdr *ip = (struct iphdr *)pkt;
+
+	self->hdrlen = (size_t)ip->ihl<<2;
+
+	memset(&source, 0, sizeof(source));
+	source.sin_addr.s_addr = ip->saddr;
+	memset(&dest, 0, sizeof(dest));
+	dest.sin_addr.s_addr = ip->daddr;
+
+#ifdef DEBUG
+	printf("\nIP Header\n");
+	printf("\t|-Version              : %d\n",(unsigned int)ip->version);
+	printf("\t|-Internet Header Length  : %d DWORDS or %d Bytes\n",(unsigned int)ip->ihl,((unsigned int)(ip->ihl))*4);
+	printf("\t|-Type Of Service   : %d\n",(unsigned int)ip->tos);
+	printf("\t|-Total Length      : %d  Bytes\n",ntohs(ip->tot_len));
+	printf("\t|-Identification    : %d\n",ntohs(ip->id));
+	printf("\t|-Time To Live	    : %d\n",(unsigned int)ip->ttl);
+	printf("\t|-Protocol 	    : %d\n",(unsigned int)ip->protocol);
+	printf("\t|-Header Checksum   : %d\n",ntohs(ip->check));
+	printf("\t|-Source IP         : %s\n", inet_ntoa(source.sin_addr));
+	printf("\t|-Destination IP    : %s\n",inet_ntoa(dest.sin_addr));
+    printf("!my checksum: %d\n",ntohs(cal_ipv4_cksm(ip)));
+#endif
+
+    // // self->ip4hdr = *iph;
+
     self->plen = pkt_len - self->hdrlen;
-    self->src_ip = iph->saddr;
-    self->dst_ip = iph->daddr;
-    
-    switch (iph->protocol)
+
+    // memset(&source, 0, sizeof(source));
+    // source.sin_addr.s_addr = iph->saddr;
+    // self->src_ip = inet_ntoa(source.sin_addr);
+
+    // memset(&dest, 0, sizeof(dest));
+    // dest.sin_addr.s_addr = iph->daddr;
+    // self->dst_ip = inet_ntoa(dest.sin_addr);
+
+    switch (ip->protocol)
     {
     case ESP:
         self->pro = ESP;
@@ -82,9 +111,9 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     }
 
 #ifdef DEBUG
-    printf("IP pkt srcIP: %d", self->src_ip);
-    printf("IP pkt dstIP: %d", self->dst_ip);
-    printf("IP pkt protocol: %d", self->pro);
+    printf("IP pkt srcIP: %s\n", self->src_ip);
+    printf("IP pkt dstIP: %s\n", self->dst_ip);
+    printf("IP pkt protocol: %d\n", self->pro);
 #endif
 
     return pkt + self->hdrlen;

@@ -40,19 +40,19 @@ inline static struct sockaddr_ll init_addr(char *name)
     bzero(&addr, sizeof(addr));
 
     // [TODO]: Fill up struct sockaddr_ll addr which will be used to bind in func set_sock_fd
-    int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+    printf("setup socket\n");
+    int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
-    addr.sll_family = AF_PACKET;
+    addr.sll_family = PF_PACKET;
 
     strcpy(ifstruct.ifr_name, name);
-
     if(ioctl(sockfd, SIOGIFINDEX, &ifstruct) < 0){
         perror("ioctl()");
     }
 
     addr.sll_ifindex = ifstruct.ifr_ifindex;
-    addr.sll_protocol = htons(ETH_P_IP);
-    
+    addr.sll_protocol = htons(ETH_P_ALL);
+
     close(sockfd);
 
     if (addr.sll_ifindex == 0) {
@@ -112,7 +112,7 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
 
     tcph->check = cal_tcp_cksm(net.ip4hdr, txp.thdr, txp.pl, txp.plen);
     iph->tot_len = htons(total_len - sizeof(self->linkhdr));
-    iph->check = cal_ipv4_cksm(*iph);
+    iph->check = cal_ipv4_cksm(iph);
 
     self->frame = sendbuff;
     self->framelen = total_len;
@@ -167,7 +167,9 @@ void init_dev(Dev *self, char *dev_name)
     self->mtu = get_ifr_mtu(&ifr);
 
     self->addr = init_addr(dev_name);
+    printf("init addr success\n");
     self->fd = set_sock_fd(self->addr);
+    printf("set socket success\n");
 
     self->frame = (uint8_t *)malloc(BUFSIZE * sizeof(uint8_t));
     self->framelen = 0;
