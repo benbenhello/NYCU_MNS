@@ -86,14 +86,15 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     //     Esp *(*fmt_rep)(Esp *self, Proto p);
     // };
     struct esp_header *esphdr = (struct esp_header *)esp_pkt;
-    
-    self->hdr = *esphdr;
+
+    self->hdr.seq = esphdr->seq;
+    self->hdr.spi = esphdr->spi;
 
 #ifdef DEBUG
-    printf("ESP seq: %d\n",esphdr->seq);
-    printf("ESP spi: %d\n",esphdr->spi);
+    printf("ESP seq: %d\n",ntohl(esphdr->seq));
+    printf("ESP spi: %x\n",ntohl(esphdr->spi));
 #endif
-    
+
     return esp_pkt + sizeof(struct esp_header);
 }
 

@@ -41,7 +41,6 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 {
     // [TODO]: Collect information from pkt.
     // Return payload of network layer
-    struct sockaddr_in source,dest;
     // struct net {
     //     char *src_ip;
     //     char *dst_ip;
@@ -58,45 +57,25 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     //     uint8_t *(*dissect)(Net *self, uint8_t *pkt, size_t pkt_len);
     //     Net *(*fmt_rep)(Net *self);
     // };
+    struct sockaddr_in source,dest;
     struct iphdr *ip = (struct iphdr *)pkt;
-
+    // set ip4hdr
+    // self->ip4hdr.version = ip->version;
+    // self->ip4hdr.ihl = ip->ihl;
+    // self->ip4hdr.tos = ip->tos;
+    // self->ip4hdr.tot_len = ip->tot_len;
+    // self->ip4hdr.id = ip->id;
+    // self->ip4hdr.ttl = ip->ttl;
+    // self->ip4hdr.protocol = ip->protocol;
+    // self->ip4hdr.check = ip->check;
+    // self->ip4hdr.saddr = ip->saddr;
+    // self->ip4hdr.daddr = ip->daddr;
+    // self->ip4hdr.frag_off = ip->frag_off;
+    // set hdrlen
 	self->hdrlen = (size_t)ip->ihl<<2;
-
-	memset(&source, 0, sizeof(source));
-	source.sin_addr.s_addr = ip->saddr;
-	memset(&dest, 0, sizeof(dest));
-	dest.sin_addr.s_addr = ip->daddr;
-
-#ifdef DEBUG
-	printf("\nIP Header\n");
-	printf("\t|-Version              : %d\n",(unsigned int)ip->version);
-	printf("\t|-Internet Header Length  : %d DWORDS or %d Bytes\n",(unsigned int)ip->ihl,((unsigned int)(ip->ihl))*4);
-	printf("\t|-Type Of Service   : %d\n",(unsigned int)ip->tos);
-	printf("\t|-Total Length      : %d  Bytes\n",ntohs(ip->tot_len));
-	printf("\t|-Identification    : %d\n",ntohs(ip->id));
-	printf("\t|-Time To Live	    : %d\n",(unsigned int)ip->ttl);
-	printf("\t|-Protocol 	    : %d\n",(unsigned int)ip->protocol);
-	printf("\t|-Header Checksum   : %d\n",ntohs(ip->check));
-	printf("\t|-Source IP         : %s\n", inet_ntoa(source.sin_addr));
-	printf("\t|-Destination IP    : %s\n",inet_ntoa(dest.sin_addr));
-    printf("!my checksum: %d\n",ntohs(cal_ipv4_cksm(ip)));
-#endif
-
-    // // self->ip4hdr = *iph;
-
+    // set plen
     self->plen = pkt_len - self->hdrlen;
-
-    // memset(&source, 0, sizeof(source));
-    // source.sin_addr.s_addr = iph->saddr;
-    // self->src_ip = inet_ntoa(source.sin_addr);
-
-    // memset(&dest, 0, sizeof(dest));
-    // dest.sin_addr.s_addr = iph->daddr;
-    // self->dst_ip = inet_ntoa(dest.sin_addr);
-
-    self->src_ip = inet_ntoa(source.sin_addr);
-    self->dst_ip = inet_ntoa(dest.sin_addr);
-    
+    // set pro
     switch (ip->protocol)
     {
     case ESP:
@@ -112,8 +91,26 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
         self->pro = UNKN_PROTO;
         break;
     }
-
+	memset(&source, 0, sizeof(source));
+	source.sin_addr.s_addr = ip->saddr;
+	memset(&dest, 0, sizeof(dest));
+	dest.sin_addr.s_addr = ip->daddr;
+    // set sorce & dest IP
+    self->src_ip = inet_ntoa(source.sin_addr);
+    self->dst_ip = inet_ntoa(dest.sin_addr);
 #ifdef DEBUG
+	printf("\nIP Header\n");
+	printf("\t|-Version              : %d\n",(unsigned int)ip->version);
+	printf("\t|-Internet Header Length  : %d DWORDS or %d Bytes\n",(unsigned int)ip->ihl,((unsigned int)(ip->ihl))*4);
+	printf("\t|-Type Of Service   : %d\n",(unsigned int)ip->tos);
+	printf("\t|-Total Length      : %d  Bytes\n",ntohs(ip->tot_len));
+	printf("\t|-Identification    : %d\n",ntohs(ip->id));
+	printf("\t|-Time To Live	    : %d\n",(unsigned int)ip->ttl);
+	printf("\t|-Protocol 	    : %d\n",(unsigned int)ip->protocol);
+	printf("\t|-Header Checksum   : %d\n",ntohs(ip->check));
+	printf("\t|-Source IP         : %s\n", inet_ntoa(source.sin_addr));
+	printf("\t|-Destination IP    : %s\n",inet_ntoa(dest.sin_addr));
+    printf("!my checksum: %d\n",ntohs(cal_ipv4_cksm(ip)));
     printf("IP pkt srcIP: %s\n", self->src_ip);
     printf("IP pkt dstIP: %s\n", self->dst_ip);
     printf("IP pkt protocol: %d\n", self->pro);
