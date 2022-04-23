@@ -4,7 +4,7 @@ CFLAGS = -std=gnu11 -Wall -I include
 DFLAG = -g
 ARMFLAGS = -march=armv7-a -static -DARM
 
-ONUE = ue_call_sim
+ONUE = ipsec_hijack
 
 ONPC = pc_call_sim
 
@@ -22,7 +22,7 @@ all: $(ONUE)
 debug: $(ONPC)
 
 
-ue_call_sim: src/main.c $(DEPS)
+ipsec_hijack: src/main.c $(DEPS)
 	$(ARMCC) $^ -o $@ $(CFLAGS) $(DFLAG) $(ARMFLAGS) -O2
 
 pc_call_sim: src/main.c $(DEPS)
