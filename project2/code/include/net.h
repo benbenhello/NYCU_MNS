@@ -36,7 +36,7 @@ struct net {
     Net *(*fmt_rep)(Net *self);
 };
 
-uint16_t cal_ipv4_cksm(struct iphdr iphdr);
+uint16_t cal_ipv4_cksm(struct iphdr* iphdr);
 
 uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len);
 
