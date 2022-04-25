@@ -203,10 +203,13 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 {
     // [TODO]: Collect information from esp_pkt.
     // Return payload of ESP
+    // esp header
     struct esp_header *esphdr = (struct esp_header *)esp_pkt;
-
     self->hdr.seq = esphdr->seq;
     self->hdr.spi = esphdr->spi;
+    // esp pl & plen
+    self->pl = esp_pkt + sizeof(struct esp_header);
+    self->plen = esp_len - sizeof(struct esp_header) - self->tlr.pad_len - sizeof(struct esp_trailer) - self->authlen;
 
 #ifdef DEBUG
     printf("ESP seq: %d\n",ntohl(esphdr->seq));
