@@ -52,23 +52,6 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // [TODO]: Collect information from segm
     // (Check IP addr & port to determine the next seq and ack value)
     // Return payload of TCP
-
-    // struct txp {
-    //     uint16_t x_src_port; /* Expected src port to CSCF */
-    //     uint16_t x_dst_port; /* Expected dst port to CSCF */
-
-    //     uint32_t x_tx_seq; /* Expected tx sequence number */
-    //     uint32_t x_tx_ack; /* Expected tx acknowledge number */
-
-    //     struct tcphdr thdr;
-    //     uint8_t hdrlen;
-
-    //     uint8_t *pl;
-    //     uint16_t plen;
-
-    //     uint8_t *(*dissect)(Net *net, Txp *self, uint8_t *txp_data, size_t txp_len);
-    //     Txp *(*fmt_rep)(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen);
-    // };
     struct tcphdr *tcp = (struct tcphdr *)segm;
     memcpy(&self->thdr, tcp, sizeof(struct tcphdr));
 
@@ -90,8 +73,9 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 	printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
 	printf("\t|-Urgent Pointer       : %d\n",tcp->urg_ptr);
     printf("self->thdr.ack_seq: %u\n", ntohl(self->thdr.ack_seq));
+    printf("self->thdr.psh: %d\n", (unsigned int)(self->thdr.psh));
 #endif
-
+    return  segm + sizeof(struct tcphdr);
 }
 
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)

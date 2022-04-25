@@ -124,8 +124,8 @@ const char *get_sadb_alg_type(int alg, int authenc)
 void sa_print(struct sadb_ext *ext)
 {
 	struct sadb_sa *sa = (struct sadb_sa *)ext;
-	printf(" SA: SPI=%d Replay Window=%d State=%s\n",
-		sa->sadb_sa_spi, sa->sadb_sa_replay,
+	printf(" SA: SPI=%x Replay Window=%d State=%s\n",
+		ntohl(sa->sadb_sa_spi), sa->sadb_sa_replay,
 		get_sa_state(sa->sadb_sa_state));
 	printf("  Authentication Algorithm: %s\n",
 		get_auth_alg(sa->sadb_sa_auth));
@@ -316,31 +316,6 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 {
     // [TODO]: Collect information from esp_pkt.
     // Return payload of ESP
-
-    // struct esp {
-    //     EspHeader hdr;
-
-    //     uint8_t *pl;    // ESP payload
-    //     size_t plen;    // ESP payload length
-
-    //     uint8_t *pad;   // ESP padding
-
-    //     EspTrailer tlr;
-
-    //     uint8_t *auth;
-    //     size_t authlen;
-
-    //     uint8_t *esp_key;
-
-    //     uint8_t *(*set_padpl)(Esp *self);
-    //     uint8_t *(*set_auth)(Esp *self,
-    //                         ssize_t (*hmac)(uint8_t const *, size_t,
-    //                                         uint8_t const *, size_t,
-    //                                         uint8_t *));
-    //     void (*get_key)(Esp *self);
-    //     uint8_t *(*dissect)(Esp *self, uint8_t *esp_pkt, size_t esp_len);
-    //     Esp *(*fmt_rep)(Esp *self, Proto p);
-    // };
     struct esp_header *esphdr = (struct esp_header *)esp_pkt;
 
     self->hdr.seq = esphdr->seq;
