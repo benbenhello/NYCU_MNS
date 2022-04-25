@@ -81,7 +81,7 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
 {
     // [TODO]: store the whole frame into self->frame
     // and store the length of the frame into self->framelen
-
+    // memcpy
     uint8_t* sendbuff = (uint8_t *)malloc(sizeof(self->linkhdr)); // increase in case of more data
     uint16_t total_len = 0;
     total_len += sizeof(self->linkhdr);
