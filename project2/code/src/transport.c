@@ -16,8 +16,9 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
 {
     // [TODO]: Finish TCP checksum calculation
     register unsigned long sum = 0;
-    unsigned short tcpLen = ntohs(iphdr.tot_len) - (iphdr.ihl<<2);
-    unsigned short *ipPayload = (unsigned short *)&tcphdr;
+    unsigned short tcpLen = (unsigned short)plen;
+    unsigned short *ipPayload = (unsigned short *)pl;
+    struct tcphdr *tcphdrp = (struct tcphdr*)(ipPayload);
     // add pseudo header
     //src ip
     sum += (iphdr.saddr >> 16)&0xFFFF;
@@ -30,8 +31,10 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
     // length
     sum += htons(tcpLen);
     // add th IP payload
+    tcphdrp->check = 0;
     while ( tcpLen > 1)
     {
+        // printf("tcplen %d\n",tcpLen);
         sum += *ipPayload++;
         tcpLen -= 2;
     }
@@ -41,10 +44,11 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
     }
     while ( sum >> 16)
     {
-        sum += ( sum & 0xFFFF) + ( sum << 16);
+        sum += ( sum & 0xFFFF) + ( sum >> 16);
     }
     sum = ~sum;
-    return ((u_int16_t)sum);
+    tcphdrp->check = (uint16_t)sum;
+    return ((uint16_t)sum);
 }
 
 uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
@@ -71,6 +75,8 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 	printf("\t\t|-Finish Flag          : %d\n",(unsigned int)tcp->fin);
 	printf("\t|-Window size          : %d\n",ntohs(tcp->window));
 	printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
+    //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
+    printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, segm, segm_len)));
 	printf("\t|-Urgent Pointer       : %d\n",tcp->urg_ptr);
     printf("self->thdr.ack_seq: %u\n", ntohl(self->thdr.ack_seq));
     printf("self->thdr.psh: %d\n", (unsigned int)(self->thdr.psh));
