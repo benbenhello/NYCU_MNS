@@ -17,6 +17,7 @@
 uint16_t cal_ipv4_cksm(struct iphdr* iphdr)
 {
     // [TODO]: Finish IP checksum calculation
+    iphdr->check = 0;
     unsigned short *addr = (unsigned short *)iphdr;
     unsigned int count = iphdr->ihl<<2;
     register unsigned long sum = 0;
@@ -34,7 +35,8 @@ uint16_t cal_ipv4_cksm(struct iphdr* iphdr)
         sum = (sum & 0xffff) + (sum >> 16);
     }
     sum = ~sum;
-    return ((u_int16_t)sum);
+    iphdr->check = (uint16_t)sum;
+    return ((uint16_t)sum);
 }
 
 uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
