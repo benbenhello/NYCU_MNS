@@ -11,6 +11,8 @@
 #include "hmac.h"
 #include "transport.h"
 
+#define DEBUG
+
 struct frame_arr frame_buf;
 
 void tx_esp_rep(Dev dev,
@@ -82,15 +84,26 @@ bool dissect_rx_data(Dev *dev,
                 char* server_ip,
                 bool* test_for_dissect)
 {
+#ifdef DEBUG
     printf("start net dissect\n");
+#endif
     uint8_t *net_data = net->dissect(net, dev->frame + LINKHDRLEN, dev->framelen - LINKHDRLEN);
+#ifdef DEBUG
     printf("net dissect success\n");
+#endif
     if (net->pro == ESP) {
         uint8_t *esp_data = esp->dissect(esp, net_data, net->plen);
+#ifdef DEBUG
         printf("esp dissect success\n");
+#endif
         uint8_t *txp_data = txp->dissect(net, txp, esp_data, esp->plen);
+#ifdef DEBUG
         printf("txp dissect success\n");
+#endif
         if(txp->thdr.psh){
+#ifdef DEBUG
+            printf("Analiyzing TCP payload");
+#endif
             if(*test_for_dissect){
                 char str[] = "I am client, and I am keeping sending message to server hahahaha";
                 char *token = strtok((char *)txp_data, ":");
@@ -165,6 +178,10 @@ void get_info(Dev *dev, Net *net, Esp *esp, Txp *txp,int *state,char* victim_ip,
 
     wait(dev, net, esp, txp, state, victim_ip, server_ip, test_for_dissect);
 
+#ifdef DEBUG
+    printf("[get_info]: wait() finish");
+#endif
+
     if(*state != SEND_ACK){
 
         memcpy(dev->linkhdr, dev->frame, LINKHDRLEN);
@@ -176,7 +193,14 @@ void get_info(Dev *dev, Net *net, Esp *esp, Txp *txp,int *state,char* victim_ip,
         txp->x_dst_port = ntohs(txp->thdr.th_dport);
 
         record_txp(net, esp, txp);
+
+#ifdef DEBUG
+    printf("[get_info]: record_txp() finish");
+#endif
         esp_hdr_rec.spi = esp->hdr.spi;
         esp->get_key(esp);
+#ifdef DEBUG
+    printf("[get_info]: get_key() finish");
+#endif
     }
 }

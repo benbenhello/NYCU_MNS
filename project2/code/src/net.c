@@ -60,7 +60,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     struct sockaddr_in source,dest;
     struct iphdr *ip = (struct iphdr *)pkt;
     memcpy(&self->ip4hdr, ip, sizeof(struct iphdr));
-    
+
     // set ip4hdr
     // self->ip4hdr.version = ip->version;
     // self->ip4hdr.ihl = ip->ihl;
@@ -73,6 +73,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     // self->ip4hdr.saddr = ip->saddr;
     // self->ip4hdr.daddr = ip->daddr;
     // self->ip4hdr.frag_off = ip->frag_off;
+
     // set hdrlen
 	self->hdrlen = (size_t)ip->ihl<<2;
     // set plen
@@ -100,6 +101,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     // set sorce & dest IP
     self->src_ip = inet_ntoa(source.sin_addr);
     self->dst_ip = inet_ntoa(dest.sin_addr);
+    
 #ifdef DEBUG
 	printf("\nIP Header\n");
 	printf("\t|-Version              : %d\n",(unsigned int)ip->version);
