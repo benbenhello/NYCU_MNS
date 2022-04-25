@@ -59,6 +59,8 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     // };
     struct sockaddr_in source,dest;
     struct iphdr *ip = (struct iphdr *)pkt;
+    memcpy(&self->ip4hdr, ip, sizeof(struct iphdr));
+    
     // set ip4hdr
     // self->ip4hdr.version = ip->version;
     // self->ip4hdr.ihl = ip->ihl;
@@ -114,6 +116,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     printf("IP pkt srcIP: %s\n", self->src_ip);
     printf("IP pkt dstIP: %s\n", self->dst_ip);
     printf("IP pkt protocol: %d\n", self->pro);
+    printf("self->ip4hdr.Protocol: %d\n", (unsigned int)self->ip4hdr.protocol);
 #endif
 
     return pkt + self->hdrlen;

@@ -70,6 +70,7 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     //     Txp *(*fmt_rep)(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen);
     // };
     struct tcphdr *tcp = (struct tcphdr *)segm;
+    memcpy(&self->thdr, tcp, sizeof(struct tcphdr));
 
 #ifdef DEBUG
    	printf("\nTCP Header\n");
@@ -88,7 +89,7 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 	printf("\t|-Window size          : %d\n",ntohs(tcp->window));
 	printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
 	printf("\t|-Urgent Pointer       : %d\n",tcp->urg_ptr);
-
+    printf("self->thdr.ack_seq: %u\n", ntohl(self->thdr.ack_seq));
 #endif
 
 }
