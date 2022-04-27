@@ -71,8 +71,9 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 	memset(&dest, 0, sizeof(dest));
 	dest.sin_addr.s_addr = ip->daddr;
     // set sorce & dest IP
-    self->src_ip = inet_ntoa(source.sin_addr);
-    self->dst_ip = inet_ntoa(dest.sin_addr);
+
+    strcpy(self->src_ip,inet_ntoa(source.sin_addr));
+    strcpy(self->dst_ip,inet_ntoa(dest.sin_addr));
 
 #ifdef DEBUG
 	printf("\nIP Header\n");
