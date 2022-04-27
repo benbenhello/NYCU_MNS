@@ -47,7 +47,7 @@ const char *get_sadb_satype(int type)
 	}
 }
 
-void key_print(struct sadb_ext *ext, uint8_t *returnkey)
+void key_print(struct sadb_ext *ext)
 {
 	struct sadb_key *key = (struct sadb_key *)ext;
 	int bits;
@@ -88,7 +88,7 @@ void print_sadb_msg(struct sadb_msg *msg, int msglen, uint8_t *key)
 	ext = (struct sadb_ext *)(msg + 1);
 	while (msglen > 0) {
 		if(ext->sadb_ext_type == SADB_EXT_KEY_ENCRYPT){
-			key_print(ext, key);
+			key_print(ext);
 		}
 		// switch (ext->sadb_ext_type) {
 		// case SADB_EXT_RESERVED:
@@ -209,7 +209,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     self->hdr.spi = esphdr->spi;
     // esp pl & plen
     self->pl = esp_pkt + sizeof(struct esp_header);
-    self->plen = esp_len - sizeof(struct esp_header) - self->tlr.pad_len - sizeof(struct esp_trailer) - self->authlen;
+    self->plen = esp_len - sizeof(struct esp_header);
 
 #ifdef DEBUG
     printf("ESP seq: %d\n",ntohl(esphdr->seq));

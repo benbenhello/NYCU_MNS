@@ -63,7 +63,7 @@ const char *get_sadb_msg_type(int type);
 
 const char *get_sadb_satype(int type);
 
-void key_print(struct sadb_ext *ext, uint8_t *espkey);
+void key_print(struct sadb_ext *ext);
 
 void print_sadb_msg(struct sadb_msg *msg, int msglen, uint8_t *key);
 
