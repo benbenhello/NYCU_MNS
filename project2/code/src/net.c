@@ -12,7 +12,7 @@
 #include "transport.h"
 #include "esp.h"
 
-#define DEBUG
+// #define DEBUG
 
 uint16_t cal_ipv4_cksm(struct iphdr* iphdr)
 {

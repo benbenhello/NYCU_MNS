@@ -11,7 +11,7 @@
 #include "hmac.h"
 #include "transport.h"
 
-#define DEBUG
+// #define DEBUG
 
 struct frame_arr frame_buf;
 

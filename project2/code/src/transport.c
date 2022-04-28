@@ -10,7 +10,7 @@
 #include "net.h"
 #include "transport.h"
 
-#define DEBUG
+// #define DEBUG
 
 uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
 {
@@ -58,7 +58,8 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // Return payload of TCP
     struct tcphdr *tcp = (struct tcphdr *)segm;
     memcpy(&self->thdr, tcp, sizeof(struct tcphdr));
-
+    self->hdrlen = (uint8_t)tcp->doff<<2;
+    // self->pl;
 #ifdef DEBUG
    	printf("\nTCP Header\n");
    	printf("\t|-Source Port          : %u\n",ntohs(tcp->source));
@@ -76,7 +77,7 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 	printf("\t|-Window size          : %d\n",ntohs(tcp->window));
 	printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
     //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
-    printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, segm, segm_len)));
+    // printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, segm, segm_len)));
 	printf("\t|-Urgent Pointer       : %d\n",tcp->urg_ptr);
     printf("self->thdr.ack_seq: %u\n", ntohl(self->thdr.ack_seq));
     printf("self->thdr.psh: %d\n", (unsigned int)(self->thdr.psh));

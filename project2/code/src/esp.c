@@ -7,7 +7,7 @@
 #include "transport.h"
 #include "hmac.h"
 
-#define DEBUG
+// #define DEBUG
 
 EspHeader esp_hdr_rec;
 
@@ -47,23 +47,133 @@ const char *get_sadb_satype(int type)
 	}
 }
 
-void key_print(struct sadb_ext *ext)
+const char *get_auth_alg(int alg)
+{
+	static char buf[100];
+	switch (alg) {
+	case SADB_AALG_NONE:		return "None";
+	case SADB_AALG_MD5HMAC:		return "HMAC-MD5";
+	case SADB_AALG_SHA1HMAC:	return "HMAC-SHA-1";
+#ifdef SADB_X_AALG_MD5
+	case SADB_X_AALG_MD5:		return "Keyed MD5";
+#endif
+#ifdef SADB_X_AALG_SHA
+	case SADB_X_AALG_SHA:		return "Keyed SHA-1";
+#endif
+#ifdef SADB_X_AALG_NULL
+	case SADB_X_AALG_NULL:		return "Null";
+#endif
+#ifdef SADB_X_AALG_SHA2_256
+	case SADB_X_AALG_SHA2_256:	return "SHA2-256";
+#endif
+#ifdef SADB_X_AALG_SHA2_384
+	case SADB_X_AALG_SHA2_384:	return "SHA2-384";
+#endif
+#ifdef SADB_X_AALG_SHA2_512
+	case SADB_X_AALG_SHA2_512:	return "SHA2-512";
+#endif
+	default:					sprintf(buf, "[Unknown authentication algorithm %d]", alg);
+								return buf;
+	}
+}
+
+const char *get_encrypt_alg(int alg)
+{
+	static char buf[100];
+	switch (alg) {
+	case SADB_EALG_NONE:		return "None";
+	case SADB_EALG_DESCBC:		return "DES-CBC";
+	case SADB_EALG_3DESCBC:		return "3DES-CBC";
+	case SADB_EALG_NULL:		return "Null";
+#ifdef SADB_X_EALG_CAST128CBC
+	case SADB_X_EALG_CAST128CBC:	return "CAST128-CBC";
+#endif
+#ifdef SADB_X_EALG_BLOWFISHCBC
+	case SADB_X_EALG_BLOWFISHCBC:	return "Blowfish-CBC";
+#endif
+#ifdef SADB_X_EALG_AES
+	case SADB_X_EALG_AES:			return "AES";
+#endif
+	default:					sprintf(buf, "[Unknown encryption algorithm %d]", alg);
+								return buf;
+	}
+}
+
+const char *get_sa_state(int state)
+{
+	static char buf[100];
+	switch (state) {
+	case SADB_SASTATE_LARVAL:	return "Larval";
+	case SADB_SASTATE_MATURE:	return "Mature";
+	case SADB_SASTATE_DYING:	return "Dying";
+	case SADB_SASTATE_DEAD:		return "Dead";
+	default:					sprintf(buf, "[Unknown SA state %d]", state);
+								return buf;
+	}
+}
+
+const char *get_sadb_alg_type(int alg, int authenc)
+{
+	if (authenc == SADB_EXT_SUPPORTED_AUTH) {
+		return get_auth_alg(alg);
+	} else {
+		return get_encrypt_alg(alg);
+	}
+}
+
+void sa_print(struct sadb_ext *ext)
+{
+	struct sadb_sa *sa = (struct sadb_sa *)ext;
+	printf(" SA: SPI=%d Replay Window=%d State=%s\n",
+		sa->sadb_sa_spi, sa->sadb_sa_replay,
+		get_sa_state(sa->sadb_sa_state));
+	printf("  Authentication Algorithm: %s\n",
+		get_auth_alg(sa->sadb_sa_auth));
+	printf("  Encryption Algorithm: %s\n",
+		get_encrypt_alg(sa->sadb_sa_encrypt));
+	if (sa->sadb_sa_flags & SADB_SAFLAGS_PFS)
+		printf("  Perfect Forward Secrecy\n");
+}
+
+void supported_print(struct sadb_ext *ext)
+{
+	struct sadb_supported *sup = (struct sadb_supported *)ext;
+	struct sadb_alg *alg;
+	int len;
+
+	printf(" Supported %s algorithms:\n",
+		sup->sadb_supported_exttype == SADB_EXT_SUPPORTED_AUTH ?
+		"authentication" :
+		"encryption");
+	len = sup->sadb_supported_len * 8;
+	len -= sizeof(*sup);
+	if (len == 0) {
+		printf("  None\n");
+		return;
+	}
+	for (alg = (struct sadb_alg *)(sup + 1); len>0; len -= sizeof(*alg), alg++) {
+		printf("  %s ivlen %d bits %d-%d\n",
+			get_sadb_alg_type(alg->sadb_alg_id, sup->sadb_supported_exttype),
+			alg->sadb_alg_ivlen, alg->sadb_alg_minbits, alg->sadb_alg_maxbits);
+	}
+}
+
+void key_print(struct sadb_ext *ext, uint8_t* k)
 {
 	struct sadb_key *key = (struct sadb_key *)ext;
 	int bits;
-	unsigned char *p;
-	printf("-----------------------------------------------------\n");
-	printf(" %s key, %d bits: 0x",
-		key->sadb_key_exttype == SADB_EXT_KEY_AUTH ?
-		"Authentication" : "Encryption",
-		key->sadb_key_bits);
-	for (p = (unsigned char *)(key + 1), bits = key->sadb_key_bits;
-			bits > 0; p++, bits -= 8)
-		printf("%02x", *p);
-	printf("\n");
+	if(key->sadb_key_exttype == SADB_EXT_KEY_AUTH){
+		printf(" %s key, %d bits: 0x","Authentication!!",key->sadb_key_bits);
+		for (k = (uint8_t *)(key + 1), bits = key->sadb_key_bits; bits > 0; k++, bits -= 8)
+			printf("%02x", *k);
+		printf("\n");
+		uint8_t* p = (uint8_t*)(key+1);
+		memcpy(p,(uint8_t*)(key+1),16);
+		printf("p %x\n",*p);
+	}
 }
 
-void print_sadb_msg(struct sadb_msg *msg, int msglen, uint8_t *key)
+void print_sadb_msg(struct sadb_msg *msg, int msglen, uint8_t* key)
 {
 	struct sadb_ext *ext;
 
@@ -87,30 +197,37 @@ void print_sadb_msg(struct sadb_msg *msg, int msglen, uint8_t *key)
 	msglen -= sizeof(struct sadb_msg);
 	ext = (struct sadb_ext *)(msg + 1);
 	while (msglen > 0) {
-		if(ext->sadb_ext_type == SADB_EXT_KEY_ENCRYPT){
-			key_print(ext);
+		switch (ext->sadb_ext_type) {
+		case SADB_EXT_RESERVED:
+			// printf(" Reserved Extension\n"); break;
+		case SADB_EXT_SA:
+			// sa_print(ext); break;
+		case SADB_EXT_LIFETIME_CURRENT:
+		case SADB_EXT_LIFETIME_HARD:
+		case SADB_EXT_LIFETIME_SOFT:
+		case SADB_EXT_ADDRESS_SRC:
+		case SADB_EXT_ADDRESS_DST:
+		case SADB_EXT_ADDRESS_PROXY:
+		case SADB_EXT_KEY_AUTH:
+		case SADB_EXT_KEY_ENCRYPT:
+					key_print(ext,key);
+					break;
+		case SADB_EXT_IDENTITY_SRC:
+		case SADB_EXT_IDENTITY_DST:
+					// printf(" [identity...]\n"); break;
+		case SADB_EXT_SENSITIVITY:
+					// printf(" [sensitivity...]\n"); break;
+		case SADB_EXT_PROPOSAL:
+					// printf(" [proposal...]\n"); break;
+		case SADB_EXT_SUPPORTED_AUTH:
+		case SADB_EXT_SUPPORTED_ENCRYPT:
+					// supported_print(ext); break;
+		case SADB_EXT_SPIRANGE:
+					// printf(" [spirange...]\n"); break;
+		default:
+			// printf(" [unknown extension %d]\n", ext->sadb_ext_type);
+			break;
 		}
-		// switch (ext->sadb_ext_type) {
-		// case SADB_EXT_RESERVED:
-		// case SADB_EXT_SA:
-		// case SADB_EXT_LIFETIME_CURRENT:
-		// case SADB_EXT_LIFETIME_HARD:
-		// case SADB_EXT_LIFETIME_SOFT:
-		// case SADB_EXT_ADDRESS_SRC:
-		// case SADB_EXT_ADDRESS_DST:
-		// case SADB_EXT_ADDRESS_PROXY:
-		// case SADB_EXT_KEY_AUTH:
-		// case SADB_EXT_KEY_ENCRYPT:
-		// 			key_print(ext, key); break;
-		// case SADB_EXT_IDENTITY_SRC:
-		// case SADB_EXT_IDENTITY_DST:
-		// case SADB_EXT_SENSITIVITY:
-		// case SADB_EXT_PROPOSAL:
-		// case SADB_EXT_SUPPORTED_AUTH:
-		// case SADB_EXT_SUPPORTED_ENCRYPT:
-		// case SADB_EXT_SPIRANGE:
-		// default:
-		// }
 		msglen -= ext->sadb_ext_len << 3;
 		ext = (char *)ext + (ext->sadb_ext_len << 3);
 	}
@@ -139,12 +256,12 @@ void get_ik(int type, uint8_t *key)
 	msg.sadb_msg_len = sizeof(msg) / 8;
 	msg.sadb_msg_pid = getpid();
 	printf("Sending dump message:\n");
-	print_sadb_msg(&msg, sizeof(msg), key);
+	// print_sadb_msg(&msg, sizeof(msg));
 
 	if(write(s, &msg, sizeof(msg)) != sizeof(msg))
         printf("[get_ik]: write error");
 
-	printf("\nMessages returned:\n");
+	// printf("\nMessages returned:\n");
 	/* Read and print SADB_DUMP replies until done */
 	goteof = 0;
 	while (goteof == 0) {
@@ -154,6 +271,7 @@ void get_ik(int type, uint8_t *key)
 		msglen = read(s, &buf, sizeof(buf));
 		msgp = (struct sadb_msg *)&buf;
 		print_sadb_msg(msgp, msglen, key);
+		printf("!!!%x\n", *key);
 		if (msgp->sadb_msg_seq == 0)
 			goteof = 1;
 	}
