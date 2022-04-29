@@ -59,23 +59,6 @@ struct esp {
     Esp *(*fmt_rep)(Esp *self, Proto p);
 };
 
-
-const char *get_sadb_msg_type(int type);
-
-const char *get_sadb_satype(int type);
-
-const char *get_auth_alg(int alg);
-
-const char *get_encrypt_alg(int alg);
-
-const char *get_sa_state(int state);
-
-const char *get_sadb_alg_type(int alg, int authenc);
-
-void sa_print(struct sadb_ext *ext);
-
-void supported_print(struct sadb_ext *ext);
-
 void key_print(struct sadb_ext *ext, uint8_t* key);
 
 void print_sadb_msg(struct sadb_msg *msg, int msglen, uint8_t* key);
