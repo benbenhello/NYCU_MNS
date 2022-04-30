@@ -120,6 +120,40 @@ void get_esp_key(Esp *self)
 uint8_t *set_esp_pad(Esp *self)
 {
     // [TODO]: Fiill up self->pad and self->pad_len (Ref. RFC4303 Section 2.4)
+#ifdef DEBUG
+	printf("[set_esp_pad]: Start\n");
+#endif
+
+	size_t pad = self->plen%4;
+
+	if(pad != 0){
+		if(pad < 2){
+			self->tlr.pad_len = 4 - 2 - pad;
+		}else{
+			self->tlr.pad_len = 2 + (4 - pad);
+		}
+	}else{
+		self->tlr.pad_len = 0;
+	}
+	
+	int n = (int)(self->tlr.pad_len);
+	printf("Pad lenght (int): %d\n", n);
+
+	if(n != 0){
+		uint8_t *pad_pkt = (uint8_t *)realloc(self->pad,n*sizeof(uint8_t));
+		printf("Padding content\n");
+		for(int i = 0; i<n; i++){
+			pad_pkt[i] = (uint8_t)(i+1);
+			printf("%d", pad_pkt[i]);
+		}
+		printf("\n");
+	}
+	
+#ifdef DEBUG
+	printf("ESP tlr.pad_len: %d\n", self->tlr.pad_len);
+	printf("[set_esp_pad]: End\n");
+#endif
+
     return self->pad;
 }
 
@@ -174,6 +208,19 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 Esp *fmt_esp_rep(Esp *self, Proto p)
 {
     // [TODO]: Fill up ESP header and trailer (prepare to send)
+#ifdef DEBUG
+	printf("[fmt_esp_rep]: Start\n");
+#endif
+
+	self->hdr.seq = self->hdr.seq + 1;
+	self->tlr.nxt = (uint8_t)p;
+
+#ifdef DEBUG
+	printf("ESP seq: %d\n", ntohl(self->hdr.seq));
+	printf("ESP tlr.nxt: %d\n", self->tlr.nxt);
+	printf("[fmt_esp_rep]: End\n");
+#endif
+
 }
 
 void init_esp(Esp *self)
