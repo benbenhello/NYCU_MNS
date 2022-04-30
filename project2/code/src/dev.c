@@ -82,39 +82,50 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     // [TODO]: store the whole frame into self->frame
     // and store the length of the frame into self->framelen
     // memcpy
-    uint8_t* sendbuff = (uint8_t *)malloc(sizeof(self->linkhdr)); // increase in case of more data
+
     uint16_t total_len = 0;
     total_len += sizeof(self->linkhdr);
-
-    struct iphdr *iph = (struct iphdr*)(sendbuff + sizeof(self->linkhdr));
-    *iph = net.ip4hdr;
     total_len += sizeof(struct iphdr);
+    total_len += net.plen;
+    uint8_t* sendbuff = (uint8_t *)malloc(total_len);
+    struct iphdr *iph = (struct iphdr*)(sendbuff + sizeof(self->linkhdr));
+    // *iph = net,ip4hdr
+    memcpy(iph, &net.ip4hdr, sizeof(struct iphdr));
+
 
     struct esp_header *esph = (struct esp_header*)(sendbuff + sizeof(self->linkhdr) + sizeof(struct iphdr));
-    *esph = esp.hdr;
-    total_len += sizeof(struct esp_header);
+    // *esph = esp.hdr;
+    memcpy(esph, &esp.hdr, sizeof(struct esp_header));
+
 
     struct tcphdr *tcph = (struct tcphdr*)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header));
-    *tcph = txp.thdr;
-    total_len += txp.hdrlen;
+    // *tcph = txp.thdr;
+    memcpy(tcph, &txp.thdr, sizeof(struct tcphdr));
+
 
     uint8_t *tcppl = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen);
-    *tcppl = *txp.pl;
-    total_len += txp.plen;
+    // *tcppl = *txp.pl;
+    memcpy(tcppl, txp.pl, txp.plen);
 
-    struct esp_trailer *espt = (struct esp_trailer *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen + txp.plen);
-    *espt = esp.tlr;
-    total_len += sizeof(struct esp_trailer);
+    uint8_t *pad = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen);
+    memcpy(pad, esp.pad, esp.tlr.pad_len);
 
-    uint8_t *espa = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen + txp.plen + sizeof(struct esp_trailer));
-    *espa = *esp.auth;
-    total_len += esp.authlen;
+    struct esp_trailer *espt = (struct esp_trailer *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len);
+    // *espt = esp.tlr;
+    memcpy(espt, &esp.tlr, sizeof(struct esp_trailer));
 
-    tcph->check = cal_tcp_cksm(net.ip4hdr, txp.thdr, txp.pl, txp.plen);
-    iph->tot_len = htons(total_len - sizeof(self->linkhdr));
-    iph->check = cal_ipv4_cksm(iph);
 
-    self->frame = sendbuff;
+    uint8_t *espa = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len + sizeof(struct esp_trailer));
+    // *espa = *esp.auth;
+    memcpy(espa, esp.auth, esp.authlen);
+
+
+    // tcph->check = cal_tcp_cksm(net.ip4hdr, txp.thdr, txp.pl, txp.plen);
+    // iph->tot_len = htons(total_len - sizeof(self->linkhdr));
+    // iph->check = cal_ipv4_cksm(iph);
+
+    memcpy(self->frame, sendbuff, total_len);
+    // self->frame = sendbuff;
     self->framelen = total_len;
 }
 

@@ -7,7 +7,7 @@
 #include "transport.h"
 #include "hmac.h"
 
-#define DEBUG
+// #define DEBUG1
 
 EspHeader esp_hdr_rec;
 
@@ -120,7 +120,7 @@ void get_esp_key(Esp *self)
 uint8_t *set_esp_pad(Esp *self)
 {
     // [TODO]: Fiill up self->pad and self->pad_len (Ref. RFC4303 Section 2.4)
-#ifdef DEBUG
+#ifdef DEBUG1
 	printf("[set_esp_pad]: Start\n");
 #endif
 
@@ -135,7 +135,7 @@ uint8_t *set_esp_pad(Esp *self)
 	}else{
 		self->tlr.pad_len = 0;
 	}
-	
+
 	int n = (int)(self->tlr.pad_len);
 	printf("Pad lenght (int): %d\n", n);
 
@@ -148,8 +148,8 @@ uint8_t *set_esp_pad(Esp *self)
 		}
 		printf("\n");
 	}
-	
-#ifdef DEBUG
+
+#ifdef DEBUG1
 	printf("ESP tlr.pad_len: %d\n", self->tlr.pad_len);
 	printf("[set_esp_pad]: End\n");
 #endif
@@ -208,19 +208,18 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 Esp *fmt_esp_rep(Esp *self, Proto p)
 {
     // [TODO]: Fill up ESP header and trailer (prepare to send)
-#ifdef DEBUG
+#ifdef DEBUG1
 	printf("[fmt_esp_rep]: Start\n");
 #endif
-
-	self->hdr.seq = self->hdr.seq + 1;
+	self->hdr.seq = htonl(ntohl(self->hdr.seq) + 1);
 	self->tlr.nxt = (uint8_t)p;
 
-#ifdef DEBUG
+#ifdef DEBUG1
 	printf("ESP seq: %d\n", ntohl(self->hdr.seq));
 	printf("ESP tlr.nxt: %d\n", self->tlr.nxt);
 	printf("[fmt_esp_rep]: End\n");
 #endif
-
+	return self;
 }
 
 void init_esp(Esp *self)

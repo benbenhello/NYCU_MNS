@@ -16,9 +16,10 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
 {
     // [TODO]: Finish TCP checksum calculation
     register unsigned long sum = 0;
-    unsigned short tcpLen = (unsigned short)plen;
-    unsigned short *ipPayload = (unsigned short *)pl;
-    struct tcphdr *tcphdrp = (struct tcphdr*)(ipPayload);
+    unsigned short tcphdrLen = (unsigned short)sizeof(struct tcphdr);
+    unsigned short dataLen = (unsigned short) plen;
+    struct tcphdr *tcphdrp = &tcphdr;
+    unsigned short *ipPayload = (unsigned short *)tcphdrp;
     // add pseudo header
     //src ip
     sum += (iphdr.saddr >> 16)&0xFFFF;
@@ -29,18 +30,27 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
     //protocol and reserved: 6
     sum += htons(IPPROTO_TCP);
     // length
-    sum += htons(tcpLen);
+    sum += htons(tcphdrLen);
+    sum += htons(dataLen);
     // add th IP payload
     tcphdrp->check = 0;
-    while ( tcpLen > 1)
+    while ( tcphdrLen > 1)
     {
         // printf("tcplen %d\n",tcpLen);
         sum += *ipPayload++;
-        tcpLen -= 2;
+        tcphdrLen -= 2;
     }
-    if ( tcpLen > 0)
+    if ( tcphdrLen > 0)
     {
         sum += ((*ipPayload)&htons(0xFF00));
+    }
+    while ( dataLen > 1)
+    {
+        sum += *pl++;
+        dataLen -= 2;
+    }
+    if( dataLen > 0){
+        sum += ((*pl)&htons(0xFF00));
     }
     while ( sum >> 16)
     {
@@ -59,7 +69,14 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     struct tcphdr *tcp = (struct tcphdr *)segm;
     memcpy(&self->thdr, tcp, sizeof(struct tcphdr));
     self->hdrlen = (uint8_t)tcp->doff<<2;
-    // self->pl;
+    self->pl = segm + sizeof(struct tcphdr);
+    self->plen = segm_len - (self->hdrlen);
+    // if((unsigned int)tcp->psh == 1){
+    //     printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
+    //     //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
+    //     printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, self->pl, self->plen)));
+    // }
+
 #ifdef DEBUG
    	printf("\nTCP Header\n");
    	printf("\t|-Source Port          : %u\n",ntohs(tcp->source));
@@ -88,7 +105,15 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
 {
     // [TODO]: Fill up self->tcphdr (prepare to send)
-
+    self->thdr.seq += htonl(dlen);
+    // self->thdr.ack_seq = (uint32_t)1;
+    self->thdr.psh = (uint16_t)1;
+    self->thdr.check = 0;
+    self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, data, dlen);
+    // printf("\t|-Sequence Number      : %u\n",ntohl(self->thdr.seq));
+   	// printf("\t|-Acknowledge Number   : %u\n",ntohl(self->thdr.ack_seq));
+    // printf("\t\t|-Push Flag            : %d\n",(unsigned int)self->thdr.psh);
+    // printf("\t|-Checksum             : %d\n",ntohs(self->thdr.check));
     return self;
 }
 
