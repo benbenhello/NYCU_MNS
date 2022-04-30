@@ -86,7 +86,6 @@ void get_ik(int type, uint8_t *key)
 	if(write(s, &msg, sizeof(msg)) != sizeof(msg))
         printf("[get_ik]: write error");
 
-
 	/* Read and print SADB_DUMP replies until done */
 	goteof = 0;
 	while (goteof == 0) {
@@ -108,10 +107,11 @@ void get_esp_key(Esp *self)
     get_ik(SADB_SATYPE_ESP, self->esp_key);
 
 #ifdef DEBUG
-	printf("----Success----\n");
+	printf("----Success Dump Key----\n");
 	for(int i=0; i<16; i++){
 		printf("%02x", self->esp_key[i]);
 	}
+	printf("------------------------\n");
 	printf("\n");
 #endif
 
