@@ -173,6 +173,15 @@ uint8_t *set_esp_auth(Esp *self,
     ssize_t ret;
 
     // [TODO]: Put everything needed to be authenticated into buff and add up nb
+	memcpy(&buff, &self->hdr, sizeof(struct esp_header));
+	nb += sizeof(struct esp_header);
+	memcpy(&buff, self->pl, self->plen);
+	nb += self->plen;
+	memcpy(&buff, self->pad, self->tlr.pad_len);
+	nb += self->tlr.pad_len;
+	memcpy(&buff, &self->tlr, sizeof(struct esp_trailer));
+	nb += sizeof(struct esp_trailer);
+	printf("[set_esp_auth] nb: %d\n", nb);
 
     ret = hmac(self->esp_key, esp_keylen, buff, nb, self->auth);
 
