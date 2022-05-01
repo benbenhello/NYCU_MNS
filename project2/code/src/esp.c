@@ -127,13 +127,9 @@ uint8_t *set_esp_pad(Esp *self)
 	printf("self->plen mod 4 : %d\n", pad);
 
 	if(pad != 0){
-		if(pad < 2){
-			self->tlr.pad_len = 4 - 2 - pad;
-		}else{
-			self->tlr.pad_len = 2 + (4 - pad);
-		}
+		self->tlr.pad_len = 2 + (4-pad);
 	}else{
-		self->tlr.pad_len = 0;
+		self->tlr.pad_len = 2;
 	}
 
 	int n = (int)(self->tlr.pad_len);
