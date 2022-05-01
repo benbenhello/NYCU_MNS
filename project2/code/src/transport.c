@@ -12,53 +12,88 @@
 
 // #define DEBUG
 
-uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
+uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphder, uint8_t *pl, int plen)
 {
-    // [TODO]: Finish TCP checksum calculation
-    register unsigned long sum = 0;
-    unsigned short tcphdrLen = (unsigned short)sizeof(struct tcphdr);
-    unsigned short dataLen = (unsigned short) plen;
-    struct tcphdr *tcphdrp = &tcphdr;
-    unsigned short *ipPayload = (unsigned short *)tcphdrp;
-    // add pseudo header
-    //src ip
+    // // // [TODO]: Finish TCP checksum calculation
+    // uint32_t sum = 0;
+    // uint16_t tcphdrLen = (tcphdr.doff<<2);
+    // // uint16_t tcpPlLen = (uint16_t)plen;
+    // uint16_t tcpLen = tcphdrLen+plen;
+    // // add pseudo header
+    // //src ip
+    // sum += (iphdr.saddr >> 16)&0xFFFF;
+    // sum += (iphdr.saddr)&0xFFFF;
+    // //dst ip
+    // sum += (iphdr.daddr >> 16)&0xFFFF;
+    // sum += (iphdr.daddr)&0xFFFF;
+    // //protocol and reserved: 6
+    // sum += htons(IPPROTO_TCP);
+    // // length
+    // sum += htons(tcpLen);
+    // // add th IP payload
+    // uint16_t *tcphdrp = (uint16_t *)(void *)&tcphdr;
+    // while ( (tcphdrLen) > 1)
+    // {
+    //     sum += *tcphdrp;
+    //     tcphdrp++;
+    //     tcphdrLen -= 2;
+    // }
+    // // if ( tcphdrLen > 0)
+    // // {
+    // //     sum += ((*tcphdrp)&htons(0xFF00));
+    // // }
+    // uint16_t *tcpPlp = (uint16_t *)pl;
+    // tcpLen = plen;
+    // while ( (tcpLen) > 1)
+    // {
+    //     sum += *tcpPlp;
+    //     tcpPlp++;
+    //     tcpLen -= 2;
+    // }
+    // if( tcpLen > 0){
+    //     sum += ((*tcpPlp)&htons(0xFF00));
+    // }
+
+    // while ( sum >> 16)
+    // {
+    //     sum += ( sum & 0xffff) + ( sum >> 16);
+    // }
+    // sum = ~sum;
+    // return ((unsigned short)sum);
+
+    uint32_t sum = 0;
+    uint16_t headerlen = tcphder.doff << 2;
+    uint16_t len = headerlen+plen;
     sum += (iphdr.saddr >> 16)&0xFFFF;
     sum += (iphdr.saddr)&0xFFFF;
-    //dst ip
     sum += (iphdr.daddr >> 16)&0xFFFF;
     sum += (iphdr.daddr)&0xFFFF;
-    //protocol and reserved: 6
     sum += htons(IPPROTO_TCP);
-    // length
-    sum += htons(tcphdrLen);
-    sum += htons(dataLen);
-    // add th IP payload
-    tcphdrp->check = 0;
-    while ( tcphdrLen > 1)
-    {
-        // printf("tcplen %d\n",tcpLen);
-        sum += *ipPayload++;
-        tcphdrLen -= 2;
+    sum += htons(len);
+    /* tcp header */
+    uint16_t *tcp = (uint16_t *)(void *)&tcphder;
+    while(headerlen > 1){
+        sum += *tcp;
+        tcp++;
+        headerlen -=2;
     }
-    if ( tcphdrLen > 0)
-    {
-        sum += ((*ipPayload)&htons(0xFF00));
+    /* tcp payload */
+    tcp = (uint16_t*)pl;
+    len = plen;
+    while(len > 1){
+        sum += *tcp;
+        tcp++;
+        len -=2;
     }
-    while ( dataLen > 1)
-    {
-        sum += *pl++;
-        dataLen -= 2;
+    if(len > 0){
+        sum += ((*tcp)&htons(0xFF00));
     }
-    if( dataLen > 0){
-        sum += ((*pl)&htons(0xFF00));
-    }
-    while ( sum >> 16)
-    {
-        sum += ( sum & 0xFFFF) + ( sum >> 16);
+    while(sum >> 16){
+        sum = (sum & 0xffff) + (sum >> 16);
     }
     sum = ~sum;
-    tcphdrp->check = (uint16_t)sum;
-    return ((uint16_t)sum);
+    return (unsigned short)sum;
+
 }
 
 uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
@@ -69,25 +104,25 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     struct tcphdr *tcp = (struct tcphdr *)segm;
     memcpy(&self->thdr, tcp, sizeof(struct tcphdr));
     self->hdrlen = (uint8_t)tcp->doff<<2;
-    self->pl = segm + sizeof(struct tcphdr);
-
-    uint16_t count = 0;
-    // printf("\n");
-    uint8_t* data = self->pl;
-    while( *data != 0x00){
+    self->pl = segm + self->hdrlen;
+    uint8_t* payload = segm;
+    uint8_t count = self->hdrlen;
+    while( payload[count+1] != 0x00 && payload[count+1] != 0x01){
         // printf("%c",*data);
-        data++;
+        // data++;
         count++;
     }
     count++;
-    // printf("\ndata length %d\n",count);
-    self->pl = segm + sizeof(struct tcphdr);
-    self->plen = count;
-    if((unsigned int)tcp->psh == 1){
-        printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
-        //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
-        printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, self->pl, self->plen)));
-    }
+
+    self->pl = segm + self->hdrlen;
+    self->plen = count-(self->hdrlen);
+    // printf("\ndata length %d\n",self->plen);
+    // if((unsigned int)tcp->psh == 1){
+    //     printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
+    //     //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
+    //     self->thdr.check = 0;
+    //     printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, self->pl, self->plen)));
+    // }
 
 #ifdef DEBUG
    	printf("\nTCP Header\n");
@@ -111,21 +146,23 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     printf("self->thdr.ack_seq: %u\n", ntohl(self->thdr.ack_seq));
     printf("self->thdr.psh: %d\n", (unsigned int)(self->thdr.psh));
 #endif
-    return  segm + sizeof(struct tcphdr);
+    return  self->pl;
 }
 
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
 {
     // [TODO]: Fill up self->tcphdr (prepare to send)
-    self->thdr.source = htons(self->x_src_port);
-    self->thdr.dest = htons(self->x_dst_port);
+    self->thdr.th_sport = htons(self->x_src_port);
+    self->thdr.th_dport = htons(self->x_dst_port);
     self->thdr.seq = htonl(self->x_tx_seq);
     self->thdr.ack_seq = htonl(self->x_tx_ack);
+    // memset(self->pl, 0, sizeof(uint8_t)*dlen);
     memcpy(self->pl, data, dlen);
 
     // self->thdr.ack_seq = (uint32_t)1;
-    self->thdr.psh = (uint16_t)1;
+    self->thdr.psh = self->thdr.psh;
     self->thdr.check = 0;
+
     self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, data, dlen);
     // printf("\t|-Sequence Number      : %u\n",ntohl(self->thdr.seq));
    	// printf("\t|-Acknowledge Number   : %u\n",ntohl(self->thdr.ack_seq));

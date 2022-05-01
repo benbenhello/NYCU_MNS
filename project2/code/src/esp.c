@@ -7,7 +7,7 @@
 #include "transport.h"
 #include "hmac.h"
 
-// #define DEBUG1
+// #define DEBUG
 
 EspHeader esp_hdr_rec;
 
@@ -122,9 +122,9 @@ uint8_t *set_esp_pad(Esp *self)
 #ifdef DEBUG1
 	printf("[set_esp_pad]: Start\n");
 #endif
-	printf("self->plen : %d\n", self->plen);
+	// printf("self->plen : %d\n", self->plen);
 	size_t pad = self->plen%4;
-	printf("self->plen mod 4 : %d\n", pad);
+	// printf("self->plen mod 4 : %d\n", pad);
 
 	if(pad != 0){
 		self->tlr.pad_len = 2 + (4-pad);
@@ -133,16 +133,16 @@ uint8_t *set_esp_pad(Esp *self)
 	}
 
 	int n = (int)(self->tlr.pad_len);
-	printf("Pad lenght (int): %d\n", n);
+	// printf("Pad lenght (int): %d\n", n);
 
 	if(n != 0){
 		uint8_t *pad_pkt = (uint8_t *)realloc(self->pad,n*sizeof(uint8_t));
-		printf("Padding content\n");
+		// printf("Padding content\n");
 		for(int i = 0; i<n; i++){
 			pad_pkt[i] = (uint8_t)(i+1);
-			printf("%d", pad_pkt[i]);
+			// printf("%d", pad_pkt[i]);
 		}
-		printf("\n");
+		// printf("\n");
 	}
 
 #ifdef DEBUG1
@@ -167,18 +167,22 @@ uint8_t *set_esp_auth(Esp *self,
     size_t esp_keylen = 16;
     size_t nb = 0;  // Number of bytes to be hashed
     ssize_t ret;
-
+	// printf("ESP seq: %d\n",ntohl(self->hdr.seq));
+    // printf("ESP spi: %x\n",ntohl(self->hdr.spi));
     // [TODO]: Put everything needed to be authenticated into buff and add up nb
-	memcpy(&buff, &self->hdr, sizeof(struct esp_header));
+	memcpy(buff, &self->hdr, sizeof(struct esp_header));
 	nb += sizeof(struct esp_header);
-	memcpy(&buff, self->pl, self->plen);
+	memcpy(buff+nb, self->pl, self->plen);
 	nb += self->plen;
-	memcpy(&buff, self->pad, self->tlr.pad_len);
+	memcpy(buff+nb, self->pad, self->tlr.pad_len);
 	nb += self->tlr.pad_len;
-	memcpy(&buff, &self->tlr, sizeof(struct esp_trailer));
+	memcpy(buff+nb, &self->tlr, sizeof(struct esp_trailer));
 	nb += sizeof(struct esp_trailer);
-	printf("[set_esp_auth] nb: %d\n", nb);
-
+	// printf("[set_esp_auth] nb: %d\n buffer ", nb);
+	// for( int i=0 ; i<nb ; i++){
+	// 	printf("%02x",buff[i]);
+	// }
+	// printf("\n");
     ret = hmac(self->esp_key, esp_keylen, buff, nb, self->auth);
 
     if (ret == -1) {
@@ -187,7 +191,7 @@ uint8_t *set_esp_auth(Esp *self,
     }
 
     self->authlen = ret;
-	printf("auth len %d\n",self->authlen);
+	// printf("auth len %d\n",self->authlen);
     return self->auth;
 }
 

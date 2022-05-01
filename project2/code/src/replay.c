@@ -40,9 +40,7 @@ void tx_esp_rep(Dev dev,
     net.fmt_rep(&net);
 
     dev.fmt_frame(&dev, net, esp, txp);
-    printf("fmt dev\n");
     dev.tx_frame(&dev);
-    printf("tx dev \n");
 }
 
 ssize_t send_msg(Dev *dev,
@@ -119,8 +117,10 @@ bool dissect_rx_data(Dev *dev,
             if(txp_data != NULL && txp->thdr.psh && *state == WAIT_SECRET &&
                     strcmp(victim_ip,net->dst_ip) == 0 && strcmp(server_ip,net->src_ip) == 0) {
                 puts("get secret: ");
-
+                // printf("%s\n",txp_data);
 	            write(1, txp_data, txp->plen);
+                // write(1, txp_data, strlen(txp_data));
+
                	*state = SEND_ACK;
             }
             return true;

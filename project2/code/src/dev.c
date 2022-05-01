@@ -83,30 +83,21 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     // and store the length of the frame into self->framelen
     // memcpy
     self->framelen = 0;
-    printf("************Frame length: %d\n", self->framelen);
     self->framelen += LINKHDRLEN;
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, &net.ip4hdr, sizeof(struct iphdr));
     self->framelen += sizeof(struct iphdr);
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, &esp.hdr, sizeof(struct esp_header));
     self->framelen += sizeof(struct esp_header);
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, &txp.thdr, sizeof(struct tcphdr));
     self->framelen += sizeof(struct tcphdr);
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, txp.pl, txp.plen);
     self->framelen += txp.plen;
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, esp.pad, esp.tlr.pad_len);
     self->framelen += esp.tlr.pad_len;
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, &esp.tlr, sizeof(struct esp_trailer));
     self->framelen += sizeof(struct esp_trailer);
-    printf("************Frame length: %d\n", self->framelen);
     memcpy(self->frame+self->framelen, esp.auth, esp.authlen);
     self->framelen += esp.authlen;
-    printf("************Frame length: %d\n", self->framelen);
     // printf("dev fmt\n");
     // uint16_t total_len = 0;
     // total_len += LINKHDRLEN;
@@ -195,9 +186,9 @@ void init_dev(Dev *self, char *dev_name)
     self->mtu = get_ifr_mtu(&ifr);
 
     self->addr = init_addr(dev_name);
-    printf("init addr success\n");
+    // printf("init addr success\n");
     self->fd = set_sock_fd(self->addr);
-    printf("set socket success\n");
+    // printf("set socket success\n");
 
     self->frame = (uint8_t *)malloc(BUFSIZE * sizeof(uint8_t));
     self->framelen = 0;
