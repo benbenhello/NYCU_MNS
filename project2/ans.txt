@@ -1,0 +1,32 @@
+uint32_t sum = 0;
+    uint16_t headerlen = tcphder.doff << 2;
+    uint16_t len = headerlen+plen;
+    sum += (iphdr.saddr >> 16)&0xFFFF;
+    sum += (iphdr.saddr)&0xFFFF;
+    sum += (iphdr.daddr >> 16)&0xFFFF;
+    sum += (iphdr.daddr)&0xFFFF;
+    sum += htons(IPPROTO_TCP);
+    sum += htons(len);
+    /* tcp header */
+    uint16_t *tcp = (uint16_t *)(void *)&tcphder;
+    while(headerlen > 1){
+        sum += *tcp;
+        tcp++;
+        headerlen -=2;
+    }
+    /* tcp payload */
+    tcp = (uint16_t*)pl;
+    len = plen;
+    while(len > 1){
+        sum += *tcp;
+        tcp++;
+        len -=2;
+    }
+    if(len > 0){
+        sum += ((*tcp)&htons(0xFF00));
+    }
+    while(sum >> 16){
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+    sum = ~sum;
+    return (unsigned short)sum;
