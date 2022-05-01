@@ -82,51 +82,68 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     // [TODO]: store the whole frame into self->frame
     // and store the length of the frame into self->framelen
     // memcpy
+    self->framelen = 0;
+    printf("************Frame length: %d\n", self->framelen);
+    self->framelen += LINKHDRLEN;
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, &net.ip4hdr, sizeof(struct iphdr));
+    self->framelen += sizeof(struct iphdr);
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, &esp.hdr, sizeof(struct esp_header));
+    self->framelen += sizeof(struct esp_header);
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, &txp.thdr, sizeof(struct tcphdr));
+    self->framelen += sizeof(struct tcphdr);
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, txp.pl, txp.plen);
+    self->framelen += txp.plen;
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, esp.pad, esp.tlr.pad_len);
+    self->framelen += esp.tlr.pad_len;
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, &esp.tlr, sizeof(struct esp_trailer));
+    self->framelen += sizeof(struct esp_trailer);
+    printf("************Frame length: %d\n", self->framelen);
+    memcpy(self->frame+self->framelen, esp.auth, esp.authlen);
+    self->framelen += esp.authlen;
+    printf("************Frame length: %d\n", self->framelen);
+    // printf("dev fmt\n");
+    // uint16_t total_len = 0;
+    // total_len += LINKHDRLEN;
+    // total_len += sizeof(struct iphdr);
+    // total_len += 20;
+    // total_len += net.plen;
 
-    uint16_t total_len = 0;
-    total_len += sizeof(self->linkhdr);
-    total_len += sizeof(struct iphdr);
-    total_len += net.plen;
-    uint8_t* sendbuff = (uint8_t *)malloc(total_len);
-    struct iphdr *iph = (struct iphdr*)(sendbuff + sizeof(self->linkhdr));
-    // *iph = net,ip4hdr
-    memcpy(iph, &net.ip4hdr, sizeof(struct iphdr));
+    // uint8_t* sendbuff = (uint8_t *)malloc(total_len);
+    // memcpy(sendbuff, self->linkhdr, LINKHDRLEN);
 
+    // struct iphdr *iph = (struct iphdr*)(sendbuff + sizeof(self->linkhdr));
+    // memcpy(iph, &net.ip4hdr, sizeof(struct iphdr));
 
-    struct esp_header *esph = (struct esp_header*)(sendbuff + sizeof(self->linkhdr) + sizeof(struct iphdr));
-    // *esph = esp.hdr;
-    memcpy(esph, &esp.hdr, sizeof(struct esp_header));
+    // struct esp_header *esph = (struct esp_header*)(sendbuff + sizeof(self->linkhdr) + sizeof(struct iphdr));
+    // memcpy(esph, &esp.hdr, sizeof(struct esp_header));
 
+    // struct tcphdr *tcph = (struct tcphdr*)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header));
+    // memcpy(tcph, &txp.thdr, sizeof(struct tcphdr));
 
-    struct tcphdr *tcph = (struct tcphdr*)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header));
-    // *tcph = txp.thdr;
-    memcpy(tcph, &txp.thdr, sizeof(struct tcphdr));
+    // uint8_t *tcppl = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen);
+    // memcpy(tcppl, txp.pl, txp.plen);
 
+    // uint8_t *pad = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen);
+    // memcpy(pad, esp.pad, esp.tlr.pad_len);
 
-    uint8_t *tcppl = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen);
-    // *tcppl = *txp.pl;
-    memcpy(tcppl, txp.pl, txp.plen);
+    // struct esp_trailer *espt = (struct esp_trailer *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len);
+    // memcpy(espt, &esp.tlr, sizeof(struct esp_trailer));
 
-    uint8_t *pad = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen);
-    memcpy(pad, esp.pad, esp.tlr.pad_len);
+    // uint8_t *espa = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len + sizeof(struct esp_trailer));
+    // memcpy(espa, esp.auth, esp.authlen);
 
-    struct esp_trailer *espt = (struct esp_trailer *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len);
-    // *espt = esp.tlr;
-    memcpy(espt, &esp.tlr, sizeof(struct esp_trailer));
+    // printf("total len %d\n",total_len);
 
+    // memcpy(self->frame, sendbuff, total_len);
+    // self->framelen = total_len;
 
-    uint8_t *espa = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len + sizeof(struct esp_trailer));
-    // *espa = *esp.auth;
-    memcpy(espa, esp.auth, esp.authlen);
-
-
-    // tcph->check = cal_tcp_cksm(net.ip4hdr, txp.thdr, txp.pl, txp.plen);
-    // iph->tot_len = htons(total_len - sizeof(self->linkhdr));
-    // iph->check = cal_ipv4_cksm(iph);
-
-    memcpy(self->frame, sendbuff, total_len);
-    // self->frame = sendbuff;
-    self->framelen = total_len;
+    // printf("!!!\n");
 }
 
 ssize_t tx_frame(Dev *self)

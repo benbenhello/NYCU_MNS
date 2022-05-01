@@ -100,7 +100,19 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 Net *fmt_net_rep(Net *self)
 {
     // [TODO]: Fill up self->ip4hdr (prepare to send)
-    self->ip4hdr.tot_len = sizeof(struct iphdr) + self->plen;
+    // printf("x src ip %s\n",self->x_src_ip);
+    // printf("x dst ip %s\n", self->x_dst_ip);
+
+    // struct sockaddr_in source,dest;
+    // memset(&source, 0, sizeof(source));
+	// source.sin_addr.s_addr = self->ip4hdr.saddr;
+	// memset(&dest, 0, sizeof(dest));
+	// dest.sin_addr.s_addr = self->ip4hdr.daddr;
+    // // set sorce & dest IP
+    // printf("src ip %x\n",self->ip4hdr.saddr);
+    // printf("dst ip %x\n",self->ip4hdr.daddr);
+
+    self->ip4hdr.tot_len = htons(sizeof(struct iphdr) + self->plen);
     self->ip4hdr.check = 0;
     self->ip4hdr.check = cal_ipv4_cksm(&(self->ip4hdr));
     return self;

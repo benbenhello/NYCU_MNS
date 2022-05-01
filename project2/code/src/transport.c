@@ -70,12 +70,24 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     memcpy(&self->thdr, tcp, sizeof(struct tcphdr));
     self->hdrlen = (uint8_t)tcp->doff<<2;
     self->pl = segm + sizeof(struct tcphdr);
-    self->plen = segm_len - (self->hdrlen);
-    // if((unsigned int)tcp->psh == 1){
-    //     printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
-    //     //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
-    //     printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, self->pl, self->plen)));
-    // }
+
+    uint16_t count = 0;
+    // printf("\n");
+    uint8_t* data = self->pl;
+    while( *data != 0x00){
+        // printf("%c",*data);
+        data++;
+        count++;
+    }
+    count++;
+    // printf("\ndata length %d\n",count);
+    self->pl = segm + sizeof(struct tcphdr);
+    self->plen = count;
+    if((unsigned int)tcp->psh == 1){
+        printf("\t|-Checksum             : %d\n",ntohs(tcp->check));
+        //cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
+        printf("my checksum %d\n",ntohs(cal_tcp_cksm(net->ip4hdr, self->thdr, self->pl, self->plen)));
+    }
 
 #ifdef DEBUG
    	printf("\nTCP Header\n");
@@ -105,7 +117,12 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
 {
     // [TODO]: Fill up self->tcphdr (prepare to send)
-    self->thdr.seq += htonl(dlen);
+    self->thdr.source = htons(self->x_src_port);
+    self->thdr.dest = htons(self->x_dst_port);
+    self->thdr.seq = htonl(self->x_tx_seq);
+    self->thdr.ack_seq = htonl(self->x_tx_ack);
+    memcpy(self->pl, data, dlen);
+
     // self->thdr.ack_seq = (uint32_t)1;
     self->thdr.psh = (uint16_t)1;
     self->thdr.check = 0;

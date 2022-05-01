@@ -15,7 +15,6 @@ void key_print(struct sadb_ext *ext, uint8_t* k)
 {
 	struct sadb_key *key = (struct sadb_key *)ext;
 	int bits;
-	int len = 0;
 
 	unsigned char *p;
 	int i;
@@ -123,8 +122,9 @@ uint8_t *set_esp_pad(Esp *self)
 #ifdef DEBUG1
 	printf("[set_esp_pad]: Start\n");
 #endif
-
+	printf("self->plen : %d\n", self->plen);
 	size_t pad = self->plen%4;
+	printf("self->plen mod 4 : %d\n", pad);
 
 	if(pad != 0){
 		if(pad < 2){
@@ -182,6 +182,7 @@ uint8_t *set_esp_auth(Esp *self,
     }
 
     self->authlen = ret;
+	printf("auth len %d\n",self->authlen);
     return self->auth;
 }
 
