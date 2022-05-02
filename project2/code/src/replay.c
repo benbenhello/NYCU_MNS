@@ -119,6 +119,7 @@ bool dissect_rx_data(Dev *dev,
                 puts("get secret: ");
                 // printf("%s\n",txp_data);
 	            write(1, txp_data, txp->plen);
+                printf("\n");
                 // write(1, txp_data, strlen(txp_data));
 
                	*state = SEND_ACK;

@@ -40,7 +40,7 @@ inline static struct sockaddr_ll init_addr(char *name)
     bzero(&addr, sizeof(addr));
 
     // [TODO]: Fill up struct sockaddr_ll addr which will be used to bind in func set_sock_fd
-    printf("setup socket\n");
+    // printf("setup socket\n");
     int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
     addr.sll_family = PF_PACKET;
@@ -98,43 +98,7 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     self->framelen += sizeof(struct esp_trailer);
     memcpy(self->frame+self->framelen, esp.auth, esp.authlen);
     self->framelen += esp.authlen;
-    // printf("dev fmt\n");
-    // uint16_t total_len = 0;
-    // total_len += LINKHDRLEN;
-    // total_len += sizeof(struct iphdr);
-    // total_len += 20;
-    // total_len += net.plen;
 
-    // uint8_t* sendbuff = (uint8_t *)malloc(total_len);
-    // memcpy(sendbuff, self->linkhdr, LINKHDRLEN);
-
-    // struct iphdr *iph = (struct iphdr*)(sendbuff + sizeof(self->linkhdr));
-    // memcpy(iph, &net.ip4hdr, sizeof(struct iphdr));
-
-    // struct esp_header *esph = (struct esp_header*)(sendbuff + sizeof(self->linkhdr) + sizeof(struct iphdr));
-    // memcpy(esph, &esp.hdr, sizeof(struct esp_header));
-
-    // struct tcphdr *tcph = (struct tcphdr*)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header));
-    // memcpy(tcph, &txp.thdr, sizeof(struct tcphdr));
-
-    // uint8_t *tcppl = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + txp.hdrlen);
-    // memcpy(tcppl, txp.pl, txp.plen);
-
-    // uint8_t *pad = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen);
-    // memcpy(pad, esp.pad, esp.tlr.pad_len);
-
-    // struct esp_trailer *espt = (struct esp_trailer *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len);
-    // memcpy(espt, &esp.tlr, sizeof(struct esp_trailer));
-
-    // uint8_t *espa = (uint8_t *)((sendbuff + sizeof(self->linkhdr)) + sizeof(struct iphdr) + sizeof(struct esp_header) + esp.plen + esp.tlr.pad_len + sizeof(struct esp_trailer));
-    // memcpy(espa, esp.auth, esp.authlen);
-
-    // printf("total len %d\n",total_len);
-
-    // memcpy(self->frame, sendbuff, total_len);
-    // self->framelen = total_len;
-
-    // printf("!!!\n");
 }
 
 ssize_t tx_frame(Dev *self)

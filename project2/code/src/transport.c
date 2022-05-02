@@ -15,84 +15,39 @@
 uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphder, uint8_t *pl, int plen)
 {
     // // // [TODO]: Finish TCP checksum calculation
-    // uint32_t sum = 0;
-    // uint16_t tcphdrLen = (tcphdr.doff<<2);
-    // // uint16_t tcpPlLen = (uint16_t)plen;
-    // uint16_t tcpLen = tcphdrLen+plen;
-    // // add pseudo header
-    // //src ip
-    // sum += (iphdr.saddr >> 16)&0xFFFF;
-    // sum += (iphdr.saddr)&0xFFFF;
-    // //dst ip
-    // sum += (iphdr.daddr >> 16)&0xFFFF;
-    // sum += (iphdr.daddr)&0xFFFF;
-    // //protocol and reserved: 6
-    // sum += htons(IPPROTO_TCP);
-    // // length
-    // sum += htons(tcpLen);
-    // // add th IP payload
-    // uint16_t *tcphdrp = (uint16_t *)(void *)&tcphdr;
-    // while ( (tcphdrLen) > 1)
-    // {
-    //     sum += *tcphdrp;
-    //     tcphdrp++;
-    //     tcphdrLen -= 2;
-    // }
-    // // if ( tcphdrLen > 0)
-    // // {
-    // //     sum += ((*tcphdrp)&htons(0xFF00));
-    // // }
-    // uint16_t *tcpPlp = (uint16_t *)pl;
-    // tcpLen = plen;
-    // while ( (tcpLen) > 1)
-    // {
-    //     sum += *tcpPlp;
-    //     tcpPlp++;
-    //     tcpLen -= 2;
-    // }
-    // if( tcpLen > 0){
-    //     sum += ((*tcpPlp)&htons(0xFF00));
-    // }
-
-    // while ( sum >> 16)
-    // {
-    //     sum += ( sum & 0xffff) + ( sum >> 16);
-    // }
-    // sum = ~sum;
-    // return ((unsigned short)sum);
 
     uint32_t sum = 0;
-    uint16_t headerlen = tcphder.doff << 2;
-    uint16_t len = headerlen+plen;
+    unsigned short headerlen = tcphder.doff << 2;
+    unsigned short tcplen = headerlen+plen;
     sum += (iphdr.saddr >> 16)&0xFFFF;
     sum += (iphdr.saddr)&0xFFFF;
     sum += (iphdr.daddr >> 16)&0xFFFF;
     sum += (iphdr.daddr)&0xFFFF;
     sum += htons(IPPROTO_TCP);
-    sum += htons(len);
+    sum += htons(tcplen);
     /* tcp header */
-    uint16_t *tcp = (uint16_t *)(void *)&tcphder;
+    unsigned short *tcp = (unsigned short *)(void *)&tcphder;
     while(headerlen > 1){
         sum += *tcp;
         tcp++;
         headerlen -=2;
     }
     /* tcp payload */
-    tcp = (uint16_t*)pl;
-    len = plen;
-    while(len > 1){
+    tcp = (unsigned short*)pl;
+    tcplen = plen;
+    while(tcplen > 1){
         sum += *tcp;
         tcp++;
-        len -=2;
+        tcplen -=2;
     }
-    if(len > 0){
+    if(tcplen > 0){
         sum += ((*tcp)&htons(0xFF00));
     }
     while(sum >> 16){
         sum = (sum & 0xffff) + (sum >> 16);
     }
     sum = ~sum;
-    return (unsigned short)sum;
+    return (uint16_t)sum;
 
 }
 
